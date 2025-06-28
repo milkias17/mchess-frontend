@@ -1,3 +1,4 @@
+import axiosClient from "@/lib/apiClient";
 import { router } from "@/main";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
@@ -28,7 +29,7 @@ export type User = {
 
 type Actions = {
   setUser: (user: User) => void;
-  logout: () => void;
+  logout: (navigate?: boolean) => Promise<void>;
 };
 
 type State = {
@@ -37,17 +38,25 @@ type State = {
 
 const useAuthBase = create<State & Actions>()(
   persist(
-    (set) => {
+    (set, get) => {
       return {
         user: null,
         setUser: (user) => {
           set({ user });
         },
-        logout: (navigate = false) => {
+        logout: async (navigate = false) => {
+          const user = get().user;
+          if (!user) return;
+          await axiosClient.post("/auth/logout", {
+            user_id: user.userId,
+          });
           set({ user: null });
           if (navigate) {
             router.navigate({
               to: "/login",
+              search: {
+                redirect: null,
+              },
             });
           }
         },

@@ -55,7 +55,7 @@ export default function Header() {
                 <a>Settings</a>
               </li>
               <li>
-                <button type="button" onClick={() => logout()}>
+                <button type="button" onClick={() => logout(true)}>
                   Logout
                 </button>
               </li>
@@ -64,7 +64,7 @@ export default function Header() {
         )}
 
         {user == null && (
-          <Link to="/login" className="btn btn-ghost">
+          <Link to="/login" className="btn btn-ghost" search={undefined}>
             Login
           </Link>
         )}
