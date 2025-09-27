@@ -1,34 +1,18 @@
-import { useBoard, type MMove } from "@/hooks/useBoard";
-import { useSearch, createRoute, type AnyRoute } from "@tanstack/react-router";
-import type { PieceSymbol } from "chess.js";
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { Chessboard } from "react-chessboard";
+import {
+  useBoard,
+  type MMove,
+  type PostHook,
+  type PreHook,
+} from "@/hooks/useBoard";
 import type { Piece, Square } from "react-chessboard/dist/chessboard/types";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Chessboard } from "react-chessboard";
+import ChessTimers from "./Counter";
 import moveSound from "../assets/sounds/Move.ogg";
 import captureSound from "../assets/sounds/Capture.ogg";
-import Counter from "@/components/Counter";
-import ChessTimers from "@/components/Counter";
-
-const pieceToPieceSymbol = (piece: Piece): PieceSymbol | null => {
-  const symbolPart = piece.slice(1) as "P" | "B" | "N" | "R" | "Q" | "K";
-
-  switch (symbolPart) {
-    case "P":
-      return "p";
-    case "B":
-      return "b";
-    case "N":
-      return "n";
-    case "R":
-      return "r";
-    case "Q":
-      return "q";
-    case "K":
-      return "k";
-    default:
-      return null; // Or throw an error if the input is invalid
-  }
-};
+import type { Chess, Move } from "chess.js";
+import { useGameWebSocket, type GameWebSocket } from "@/hooks/useWebsocket";
+import Loading from "./Loading";
 
 function getHintStyles(moves: string[] | null) {
   const obj = {};
@@ -50,19 +34,33 @@ function getHintStyles(moves: string[] | null) {
 const moveAudio = new Audio(moveSound);
 const captureAudio = new Audio(captureSound);
 
-function getTimeAndIncrement(timeFormat: string) {
-  const splitted = timeFormat.split("+");
-  if (splitted.length !== 2) {
-    throw new Error("Invalid time format");
+type BoardProps = {
+  gameId: string;
+  boardWidth?: number;
+  preHookFunctions?: PreHook[];
+  postHookFunctions?: PostHook[];
+  gameWebSocket: GameWebSocket;
+};
+
+function getInCheckStyle(game: Chess) {
+  const inCheck = game.inCheck();
+  if (!inCheck) {
+    return {};
   }
 
+  const kingPosition = game.findPiece({
+    color: game.turn(),
+    type: "k",
+  });
+
   return {
-    time: 60 * Number(splitted[0]),
-    increment: Number(splitted[1]),
+    [kingPosition[0]]: {
+      backgroundColor: "#dc143c",
+    },
   };
 }
 
-function ChessGame() {
+export default function OnlineBoard(props: BoardProps) {
   const {
     game,
     makeMove,
@@ -70,38 +68,30 @@ function ChessGame() {
     addPreHook,
     removePostHook,
     removePreHook,
+    setGameFen,
   } = useBoard(() => {
-    alert("Checkmate!");
+    console.log("Checkmate!");
   });
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [lastMovedToSquare, setLastMovedToSquare] = useState<Square | null>(
     null,
   );
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [boardWidth, setBoardWidth] = useState(800);
+  const [boardWidth, setBoardWidth] = useState(props.boardWidth ?? 800);
+  const {
+    lastReceivedMove,
+    gameFen,
+    currentTurn,
+    sendMove,
+    hasStarted,
+    isConnected,
+    clientPlayerColor,
+    game: liveGame,
+  } = props.gameWebSocket;
 
-  const { timeFormat } = useSearch({
-    from: "/authenticated/game",
-  });
-  const { time, increment } = getTimeAndIncrement(timeFormat);
-
-  function getInCheckStyle() {
-    const inCheck = game.inCheck();
-    if (!inCheck) {
-      return {};
-    }
-
-    const kingPosition = game.findPiece({
-      color: game.turn(),
-      type: "k",
-    });
-
-    return {
-      [kingPosition[0]]: {
-        backgroundColor: "#dc143c",
-      },
-    };
-  }
+  useEffect(() => {
+    setGameFen(gameFen);
+  }, [gameFen]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -125,9 +115,7 @@ function ChessGame() {
   const preHook = useCallback(
     (move: MMove) => {
       setLastMovedToSquare(move.to as Square);
-
       const piece = game.get(move.to as Square);
-
       if (piece == null) {
         moveAudio.play();
       } else {
@@ -138,7 +126,25 @@ function ChessGame() {
   );
 
   useEffect(() => {
-    const postHook = () => {
+    if (props.preHookFunctions && props.preHookFunctions.length > 0) {
+      for (const fn of props.preHookFunctions) {
+        addPreHook(fn);
+      }
+    }
+
+    addPostHook((move) => {
+      sendMove(move);
+    }, "sendMove");
+
+    if (props.postHookFunctions && props.postHookFunctions.length > 0) {
+      for (const fn of props.postHookFunctions) {
+        addPostHook(fn);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const postHook = (move: MMove) => {
       setSelectedSquare(null);
     };
     addPreHook(preHook);
@@ -148,7 +154,7 @@ function ChessGame() {
       removePreHook(preHook);
       removePostHook(postHook);
     };
-  }, [preHook]);
+  }, []);
 
   const hintedSquareStyles = useMemo(() => {
     if (!selectedSquare) {
@@ -161,9 +167,13 @@ function ChessGame() {
     });
 
     return moves.map((move) => move.to);
-  }, [selectedSquare]);
+  }, [selectedSquare, game]);
 
   function onDrop(sourceSquare: Square, targetSquare: Square, piece: Piece) {
+    if (piece.at(0) !== clientPlayerColor) {
+      return false;
+    }
+
     const move = makeMove({
       from: sourceSquare,
       to: targetSquare,
@@ -176,11 +186,18 @@ function ChessGame() {
     return true;
   }
 
+  if (!liveGame) {
+    return <Loading />;
+  }
+
   return (
-    <div className="flex flex-col lg:flex-row my-10 mx-8 items-center">
-      <div ref={containerRef} className="mx-2 md:mx-10 lg:mx-20 basis-3/4">
+    <div className="flex flex-col flex-1 lg:flex-row mx-8 items-center">
+      <div
+        ref={containerRef}
+        className="flex-1 mx-2 md:mx-10 lg:mx-20 basis-3/4"
+      >
         <Chessboard
-          showBoardNotation={true}
+          boardOrientation={clientPlayerColor === "w" ? "white" : "black"}
           customBoardStyle={{
             ...(boardWidth >= 500 && { margin: "auto" }),
           }}
@@ -189,7 +206,10 @@ function ChessGame() {
             if (!squarePiece) {
               return;
             }
-            if (squarePiece.color !== game.turn()) {
+            if (
+              squarePiece.color !== game.turn() ||
+              squarePiece.color !== clientPlayerColor
+            ) {
               return;
             }
             setSelectedSquare(sourceSquare);
@@ -199,7 +219,11 @@ function ChessGame() {
           onPieceDrop={onDrop}
           onSquareClick={(s, p) => {
             const piece = game.get(s);
+
             if (selectedSquare == null) {
+              if (piece?.color !== clientPlayerColor) {
+                return;
+              }
               if (piece != null && piece.color === game.turn()) {
                 setSelectedSquare(s);
               }
@@ -223,21 +247,29 @@ function ChessGame() {
                 backgroundColor: "#1e90ff",
               },
             }),
-            ...(lastMovedToSquare != null && {
+            ...(lastMovedToSquare != null &&
+              game.turn() !== clientPlayerColor && {
               [lastMovedToSquare]: {
                 backgroundColor: "rgba(255, 255, 0, 0.3)",
               },
             }),
-            ...getInCheckStyle(),
+            ...(lastReceivedMove != null &&
+              game.turn() === clientPlayerColor && {
+              [lastReceivedMove.to]: {
+                backgroundColor: "rgba(255, 255, 0, 0.3)",
+              },
+            }),
+
+            ...getInCheckStyle(game),
           }}
         />
       </div>
       <div className="basis-1/5 flex flex-col justify-center items-center">
         <ChessTimers
-          initialTime={time * 60 * 1000} // Convert time to milliseconds
-          increment={increment * 1000}
-          whiteTime={time * 60 * 1000}
-          blakcTime={time * 60 * 1000}
+          clientColor={clientPlayerColor}
+          whiteTime={liveGame.white_time_ms}
+          blackTime={liveGame.black_time_ms}
+          increment={liveGame.increment_ms}
           onWhiteTimeout={() => console.log("White lost")}
           onBlackTimeout={() => console.log("Black Lost")}
           isWhiteTurn={game.turn() === "w"}
@@ -246,23 +278,3 @@ function ChessGame() {
     </div>
   );
 }
-
-const PageRoute = (parentRoute: AnyRoute) =>
-  createRoute({
-    path: "/game",
-    component: ChessGame,
-    getParentRoute: () => parentRoute,
-    validateSearch: (search) => {
-      if (search?.timeFormat == null) {
-        return {
-          timeFormat: null,
-        };
-      }
-      const timeFormat = search?.timeFormat as string;
-      return {
-        timeFormat: timeFormat,
-      };
-    },
-  });
-
-export default PageRoute;

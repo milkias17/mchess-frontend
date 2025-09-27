@@ -3,7 +3,7 @@ import { API_URL } from "./constants";
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { accessTokenToUser } from "./authService";
 
-async function refreshAuthToken() {
+export async function refreshAuthToken() {
 	const userId = useAuth.getState().user?.userId;
 	const logout = useAuth.getState().logout;
 	if (!userId) throw new AxiosError("No userId", "401");

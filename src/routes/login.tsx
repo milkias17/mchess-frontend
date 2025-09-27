@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { accessTokenToUser } from "@/lib/authService";
+import type { AxiosError } from "axios";
 
 type LoginResp = {
 	access_token: string;
@@ -27,6 +28,7 @@ type DecodedAccessToken = {
 function Login() {
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
+	const [error, setError] = useState("");
 	const setUser = useAuth.use.setUser();
 	const navigate = useNavigate();
 
@@ -47,12 +49,22 @@ function Login() {
 			setUser(user);
 			setUsername("");
 			setPassword("");
+			setError("");
 			navigate({
 				to: redirect ?? "/",
 			});
 		},
-		onError: (err) => {
+		onError: (err: AxiosError) => {
 			console.error(err);
+			const status = err.code;
+			console.log(status);
+			if (status == "401") {
+				setError("Incorrect username or password");
+			} else if (status == "404") {
+				setError("User not found");
+			} else {
+				setError("Something went wrong. Try again or contact the admin");
+			}
 		},
 	});
 
@@ -67,6 +79,8 @@ function Login() {
 			<div className="card w-full max-w-sm shadow-xl bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title text-center block mb-6">Welcome Back!</h2>
+
+					{error && <p className="text-center text-error">{error}</p>}
 
 					<form onSubmit={handleSubmit}>
 						<div className="form-control">
@@ -110,6 +124,9 @@ function Login() {
 
 						<div className="mt-6 justify-self-center">
 							<button type="submit" className="btn btn-primary">
+								{isPending && (
+									<span className="loading loading-spinner loading-xs"></span>
+								)}
 								Login
 							</button>
 						</div>

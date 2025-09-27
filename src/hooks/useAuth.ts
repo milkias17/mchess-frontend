@@ -64,7 +64,7 @@ const useAuthBase = create<State & Actions>()(
     },
     {
       name: "user-storage",
-      storage: createJSONStorage(() => sessionStorage),
+      // storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => {
         if (!state.user) return { user: null };
         const { token, ...userWithoutToken } = state.user;
