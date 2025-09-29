@@ -1,5 +1,10 @@
 import { useBoard, type MMove } from "@/hooks/useBoard";
-import { useSearch, createRoute, type AnyRoute } from "@tanstack/react-router";
+import {
+  useSearch,
+  createRoute,
+  type AnyRoute,
+  useNavigate,
+} from "@tanstack/react-router";
 import type { PieceSymbol } from "chess.js";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { Chessboard } from "react-chessboard";
@@ -30,23 +35,6 @@ const pieceToPieceSymbol = (piece: Piece): PieceSymbol | null => {
   }
 };
 
-function getHintStyles(moves: string[] | null) {
-  const obj = {};
-  if (moves == null) {
-    return obj;
-  }
-
-  for (const move of moves) {
-    obj[move] = {
-      background:
-        "radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)",
-      borderRadius: "50%",
-    };
-  }
-
-  return obj;
-}
-
 const moveAudio = new Audio(moveSound);
 const captureAudio = new Audio(captureSound);
 
@@ -57,7 +45,7 @@ function getTimeAndIncrement(timeFormat: string) {
   }
 
   return {
-    time: 60 * Number(splitted[0]),
+    time: Number(splitted[0]),
     increment: Number(splitted[1]),
   };
 }
@@ -73,6 +61,7 @@ function ChessGame() {
   } = useBoard(() => {
     alert("Checkmate!");
   });
+  const navigate = useNavigate();
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [lastMovedToSquare, setLastMovedToSquare] = useState<Square | null>(
     null,
@@ -101,6 +90,35 @@ function ChessGame() {
         backgroundColor: "#dc143c",
       },
     };
+  }
+
+  function getHintStyles(moves: string[] | null) {
+    if (moves == null) {
+      return {};
+    }
+
+    const styleMap = new Map();
+
+    for (const move of moves) {
+      const piece = game.get(move as Square);
+      if (piece == null) {
+        styleMap.set(move, {
+          background:
+            "radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)",
+          borderRadius: "50%",
+        });
+      } else {
+        const captureStyle = {
+          background: "rgba(255, 0, 0, 0.15)",
+          borderRadius: "50%",
+          boxShadow:
+            "0 0 0 3px rgba(255, 0, 0, 0.4)," + "0 0 15px rgba(255, 0, 0, 0.2)",
+        };
+        styleMap.set(move, captureStyle);
+      }
+    }
+
+    return Object.fromEntries(styleMap.entries());
   }
 
   useEffect(() => {
@@ -176,10 +194,21 @@ function ChessGame() {
     return true;
   }
 
+  function handleResign() {
+    if (game.isGameOver()) {
+      return;
+    }
+
+    navigate({
+      to: "/",
+    });
+  }
+
   return (
     <div className="flex flex-col lg:flex-row my-10 mx-8 items-center">
       <div ref={containerRef} className="mx-2 md:mx-10 lg:mx-20 basis-3/4">
         <Chessboard
+          arePiecesDraggable={true}
           showBoardNotation={true}
           customBoardStyle={{
             ...(boardWidth >= 500 && { margin: "auto" }),
@@ -217,31 +246,42 @@ function ChessGame() {
             }
           }}
           customSquareStyles={{
+            ...(lastMovedToSquare != null && {
+              [lastMovedToSquare]: {
+                backgroundColor: "rgba(255, 255, 0, 0.3)",
+              },
+            }),
             ...getHintStyles(hintedSquareStyles),
             ...(selectedSquare != null && {
               [selectedSquare]: {
                 backgroundColor: "#1e90ff",
               },
             }),
-            ...(lastMovedToSquare != null && {
-              [lastMovedToSquare]: {
-                backgroundColor: "rgba(255, 255, 0, 0.3)",
-              },
-            }),
+
             ...getInCheckStyle(),
           }}
         />
       </div>
-      <div className="basis-1/5 flex flex-col justify-center items-center">
+      <div className="basis-1/5 flex flex-col justify-center items-center gap-6">
         <ChessTimers
-          initialTime={time * 60 * 1000} // Convert time to milliseconds
+          clientColor={"w"}
           increment={increment * 1000}
           whiteTime={time * 60 * 1000}
-          blakcTime={time * 60 * 1000}
-          onWhiteTimeout={() => console.log("White lost")}
-          onBlackTimeout={() => console.log("Black Lost")}
+          blackTime={time * 60 * 1000}
+          onWhiteTimeout={() => alert("White lost")}
+          onBlackTimeout={() => alert("Black Lost")}
           isWhiteTurn={game.turn() === "w"}
         />
+
+        {!game.isGameOver() && (
+          <button
+            type="button"
+            className="btn btn-error btn-xl rounded-xl shadow-lg hover:scale-105 transition-transform"
+            onClick={handleResign}
+          >
+            ♟️ Resign
+          </button>
+        )}
       </div>
     </div>
   );

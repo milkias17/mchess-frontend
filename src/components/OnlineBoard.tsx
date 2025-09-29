@@ -14,23 +14,6 @@ import type { Chess, Move } from "chess.js";
 import { useGameWebSocket, type GameWebSocket } from "@/hooks/useWebsocket";
 import Loading from "./Loading";
 
-function getHintStyles(moves: string[] | null) {
-  const obj = {};
-  if (moves == null) {
-    return obj;
-  }
-
-  for (const move of moves) {
-    obj[move] = {
-      background:
-        "radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)",
-      borderRadius: "50%",
-    };
-  }
-
-  return obj;
-}
-
 const moveAudio = new Audio(moveSound);
 const captureAudio = new Audio(captureSound);
 
@@ -186,6 +169,34 @@ export default function OnlineBoard(props: BoardProps) {
     return true;
   }
 
+  function getHintStyles(moves: string[] | null) {
+    if (moves == null) {
+      return {};
+    }
+
+    const styleMap = new Map();
+
+    for (const move of moves) {
+      const piece = game.get(move as Square);
+      if (piece == null) {
+        styleMap.set(move, {
+          background:
+            "radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)",
+          borderRadius: "50%",
+        });
+      } else {
+        const captureStyle = {
+          background: "rgba(255, 0, 0, 0.15)",
+          borderRadius: "50%",
+          boxShadow:
+            "0 0 0 3px rgba(255, 0, 0, 0.4)," + "0 0 15px rgba(255, 0, 0, 0.2)",
+        };
+        styleMap.set(move, captureStyle);
+      }
+    }
+
+    return Object.fromEntries(styleMap.entries());
+  }
   if (!liveGame) {
     return <Loading />;
   }
@@ -241,12 +252,6 @@ export default function OnlineBoard(props: BoardProps) {
             }
           }}
           customSquareStyles={{
-            ...getHintStyles(hintedSquareStyles),
-            ...(selectedSquare != null && {
-              [selectedSquare]: {
-                backgroundColor: "#1e90ff",
-              },
-            }),
             ...(lastMovedToSquare != null &&
               game.turn() !== clientPlayerColor && {
               [lastMovedToSquare]: {
@@ -260,6 +265,12 @@ export default function OnlineBoard(props: BoardProps) {
               },
             }),
 
+            ...getHintStyles(hintedSquareStyles),
+            ...(selectedSquare != null && {
+              [selectedSquare]: {
+                backgroundColor: "#1e90ff",
+              },
+            }),
             ...getInCheckStyle(game),
           }}
         />
