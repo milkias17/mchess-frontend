@@ -11,12 +11,12 @@ import {
 import Loading from "@/components/Loading";
 import ErrorDisplay from "@/components/Error";
 
-function getResult(outcome: string | null) {
+function getResult(outcome: string | null, isWhite: boolean) {
   switch (outcome) {
     case "1-0":
-      return "Win";
+      return isWhite ? "Win" : "Loss";
     case "0-1":
-      return "Loss";
+      return isWhite ? "Loss" : "Win";
     case "1/2-1/2":
       return "Draw";
     default:
@@ -186,8 +186,12 @@ function UserProfile() {
                           ? game.black_username
                           : game.white_username}
                       </td>
-                      <td className={getResultColor(getResult(game.winner))}>
-                        {getResult(game.winner)}
+                      <td
+                        className={getResultColor(
+                          getResult(game.winner, game.white_user_id === userId),
+                        )}
+                      >
+                        {getResult(game.winner, game.white_user_id === userId)}
                       </td>
                       <td>{new Date(game.created_at).toLocaleDateString()}</td>
                     </tr>
