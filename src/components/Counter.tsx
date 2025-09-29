@@ -26,7 +26,6 @@ function Counter({
 
   useEffect(() => {
     if (time === counterTime) return;
-
     setTime(Math.floor(counterTime / 1000));
   }, [counterTime]);
 
@@ -68,13 +67,31 @@ function Counter({
   }, [time]);
 
   return (
-    <div className="card w-32 bg-base-100 shadow-xl">
-      <div className="card-body">
+    <div
+      className={`card w-40 shadow-2xl rounded-2xl border border-base-300 transition-transform duration-300 ${isActive
+          ? "bg-gradient-to-br from-emerald-500 to-green-600 scale-105"
+          : "bg-gradient-to-br from-gray-700 to-gray-800 opacity-80"
+        }`}
+    >
+      <div className="card-body p-4 items-center justify-center">
         <h2
-          className={`card-title justify-center text-5xl ${isActive ? "text-success" : "text-gray-500"}`}
+          className={`text-5xl font-extrabold tracking-wider drop-shadow-lg ${isActive ? "text-white" : "text-gray-300"
+            }`}
         >
           {formatTime(time)}
         </h2>
+        <div
+          className={`mt-2 h-1.5 w-full rounded-full overflow-hidden ${isActive ? "bg-white/30" : "bg-gray-600"
+            }`}
+        >
+          <div
+            className={`h-full transition-all duration-1000 ease-linear ${isActive ? "bg-white" : "bg-gray-400"
+              }`}
+            style={{
+              width: `${Math.max((time / (counterTime / 1000)) * 100, 0)}%`,
+            }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -101,7 +118,8 @@ function ChessTimers({
 }: ChessTimersProps) {
   return (
     <div
-      className={`flex flex-col justify-center gap-4 ${clientColor === "b" && "flex-col-reverse"}`}
+      className={`flex flex-col justify-center gap-6 ${clientColor === "b" && "flex-col-reverse"
+        }`}
     >
       <Counter
         counterTime={whiteTime}
