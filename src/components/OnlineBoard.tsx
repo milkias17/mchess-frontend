@@ -66,6 +66,7 @@ export default function OnlineBoard(props: BoardProps) {
     gameFen,
     currentTurn,
     sendMove,
+    sendResignation,
     hasStarted,
     isConnected,
     clientPlayerColor,
@@ -137,7 +138,7 @@ export default function OnlineBoard(props: BoardProps) {
       removePreHook(preHook);
       removePostHook(postHook);
     };
-  }, []);
+  }, [preHook]);
 
   const hintedSquareStyles = useMemo(() => {
     if (!selectedSquare) {
@@ -197,12 +198,17 @@ export default function OnlineBoard(props: BoardProps) {
 
     return Object.fromEntries(styleMap.entries());
   }
+
+  function handleResign() {
+    sendResignation();
+  }
+
   if (!liveGame) {
     return <Loading />;
   }
 
   return (
-    <div className="flex flex-col flex-1 lg:flex-row mx-8 items-center">
+    <div className="flex flex-col gap-8 flex-1 lg:flex-row mx-8 items-center">
       <div
         ref={containerRef}
         className="flex-1 mx-2 md:mx-10 lg:mx-20 basis-3/4"
@@ -275,7 +281,7 @@ export default function OnlineBoard(props: BoardProps) {
           }}
         />
       </div>
-      <div className="basis-1/5 flex flex-col justify-center items-center">
+      <div className="basis-1/5 flex flex-col justify-center items-center gap-6">
         <ChessTimers
           clientColor={clientPlayerColor}
           whiteTime={liveGame.white_time_ms}
@@ -285,6 +291,16 @@ export default function OnlineBoard(props: BoardProps) {
           onBlackTimeout={() => console.log("Black Lost")}
           isWhiteTurn={game.turn() === "w"}
         />
+
+        {!game.isGameOver() && (
+          <button
+            type="button"
+            className="btn btn-error btn-xl rounded-xl shadow-lg hover:scale-105 transition-transform"
+            onClick={handleResign}
+          >
+            ♟️ Resign
+          </button>
+        )}
       </div>
     </div>
   );

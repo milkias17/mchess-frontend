@@ -4,7 +4,7 @@ import { API_URL, WEBSOCKET_URL } from "@/lib/constants";
 import { useAuth } from "./useAuth";
 import { refreshAuthToken } from "@/lib/apiClient";
 import { accessTokenToUser } from "@/lib/authService";
-import type { GameEntity, LiveGame } from "@/lib/types";
+import type { GameEntity, IMove, LiveGame } from "@/lib/types";
 import { useNavigate } from "@tanstack/react-router";
 
 type WebSocketMessageRecieve = {
@@ -14,7 +14,7 @@ type WebSocketMessageRecieve = {
 };
 
 type WebSocketMessageSend = {
-  type: "move" | "gameStateUpdate" | "game_started" | "error";
+  type: "move" | "gameStateUpdate" | "game_started" | "error" | "resignation";
   data: any;
 };
 
@@ -29,9 +29,10 @@ export type GameWebSocket = {
   gameFen: string;
   currentTurn: "white" | "black";
   sendMove: (move: Move) => void;
+  sendResignation: () => void;
   isConnected: boolean;
   clientPlayerColor: "w" | "b";
-  lastReceivedMove: Move | null;
+  lastReceivedMove: IMove | null;
   hasStarted: boolean;
 };
 
@@ -42,7 +43,7 @@ export function useGameWebSocket(gameId: string) {
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
   );
   const [currentTurn, setCurrentTurn] = useState<"white" | "black">("white");
-  const [lastReceivedMove, setLastReceivedMove] = useState<Move | null>(null);
+  const [lastReceivedMove, setLastReceivedMove] = useState<IMove | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [clientPlayerColor, setClientPlayerColor] = useState<"w" | "b">("w");
@@ -92,6 +93,7 @@ export function useGameWebSocket(gameId: string) {
 
     ws.current.onmessage = (event) => {
       const message: WebSocketMessageRecieve = JSON.parse(event.data);
+      console.log("Recieved message:", message.type);
       switch (message.type) {
         case "gameStateUpdate": {
           const payload = message.data as GameStateUpdatePayload;
@@ -122,12 +124,17 @@ export function useGameWebSocket(gameId: string) {
           } else if (game.black_id === user.userId) {
             setClientPlayerColor("b");
           }
-          const lastMove = game.moves?.[game.moves.length - 1];
-          setGameFen(lastMove?.after);
-          setCurrentTurn(lastMove?.color === "w" ? "black" : "white");
-          setLastReceivedMove(lastMove);
+
+          if (game.moves != null) {
+            const lastMove = game.moves?.[game.moves.length - 1];
+            setGameFen(lastMove.after);
+            setCurrentTurn(lastMove.color === "w" ? "black" : "white");
+            setLastReceivedMove(lastMove);
+          }
+
           setGame(game);
           setHasStarted(true);
+
           break;
         }
         case "game_ended": {
@@ -182,11 +189,25 @@ export function useGameWebSocket(gameId: string) {
     [ws.current],
   );
 
+  const sendResignation = useCallback(() => {
+    if (ws.current == null || ws.current.readyState !== WebSocket.OPEN) {
+      console.warn("WebSocket not open. Cannot send resignation.");
+      return;
+    }
+
+    const message: WebSocketMessageSend = {
+      type: "resignation",
+      data: {},
+    };
+    ws.current.send(JSON.stringify(message));
+  }, [ws.current]);
+
   return {
     game,
     gameFen,
     currentTurn,
     sendMove,
+    sendResignation,
     isConnected,
     clientPlayerColor,
     lastReceivedMove,
