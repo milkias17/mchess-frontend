@@ -4,7 +4,7 @@ import axiosClient from "@/lib/apiClient";
 import type { GameEntity, IMove } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
 import { createRoute, useParams, type AnyRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { Chessboard } from "react-chessboard";
 import moveSound from "../assets/sounds/Move.ogg";
 import captureSound from "../assets/sounds/Capture.ogg";
@@ -32,6 +32,9 @@ function CompletedChessGame() {
   });
 
   const user = useAuth.use.user();
+
+  const containerRef = useRef<HTMLTableSectionElement>(null);
+  const activeRef = useRef<HTMLTableRowElement>(null);
 
   const [boardWidth, setBoardWidth] = useState(800);
 
@@ -69,6 +72,25 @@ function CompletedChessGame() {
   );
 
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
+
+  useEffect(() => {
+    if (activeRef.current == null || containerRef.current == null) return;
+
+    const container = containerRef.current;
+    const element = activeRef.current;
+
+    const containerRect = container.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+
+    const offsetTop = elementRect.top - containerRect.top;
+    const offsetBottom = elementRect.bottom - containerRect.top;
+
+    if (offsetTop < 0) {
+      container.scrollTop += offsetTop - 10;
+    } else if (offsetBottom > container.clientHeight) {
+      container.scrollTop += offsetBottom - container.clientHeight + 10;
+    }
+  }, [currentMoveIndex]);
 
   const inCheckStyle = useMemo(() => {
     const game = new Chess(fenHistory[currentMoveIndex]);
@@ -265,8 +287,13 @@ function CompletedChessGame() {
       </div>
 
       {/* Move list */}
-      <div className="w-full xl:basis-96 p-4 rounded-2xl shadow bg-base-200 overflow-y-auto max-h-[800px] order-2 xl:order-3">
-        <h2 className="text-lg font-semibold mb-4 text-center xl:text-start">Moves</h2>
+      <div
+        ref={containerRef}
+        className="w-full xl:w-96 p-4 rounded-2xl shadow bg-base-200 overflow-y-auto order-2 max-h-96 xl:order-3"
+      >
+        <h2 className="text-lg font-semibold mb-4 text-center xl:text-start">
+          Moves
+        </h2>
         <div className="overflow-x-auto">
           <table className="table table-zebra w-full">
             <thead>
@@ -290,7 +317,10 @@ function CompletedChessGame() {
                 const blackActive = currentMoveIndex === blackIndex;
 
                 return (
-                  <tr key={i}>
+                  <tr
+                    ref={whiteActive || blackActive ? activeRef : null}
+                    key={`${whiteIndex}${blackIndex}`}
+                  >
                     <td className="font-bold">{i + 1}</td>
                     <td>
                       {whiteMove ? (
