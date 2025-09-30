@@ -30,13 +30,13 @@ function OnlineChessGame() {
 
   if (!gameWebSocket.game?.has_begun) {
     return (
-      <div className="flex flex-col lg:flex-row gap-4 justify-around my-10">
+      <div className="flex flex-col-reverse xl:flex-row gap-4 xl:justify-around my-10 mx-4">
         <img
           src="/chess-board.png"
           alt="Chessboard"
           className="aspect-square"
         />
-        <div className="flex flex-col justify-around gap-8 p-24 lg:p-48 bg-neutral rounded-lg">
+        <div className="flex flex-col h-96 xl:w-1/3 xl:h-auto justify-around gap-4 xl:gap-8 p-8 xl:p-24 bg-neutral rounded-xl">
           <h2 className="text-3xl font-bold">Waiting for user to join game</h2>
           <div className="flex flex-col items-center gap-2">
             <p className="text-lg">Share this link:</p>
