@@ -21,11 +21,9 @@ function Counter({
   isActive,
   onTimeout,
 }: CounterProps) {
-  const [time, setTime] = useState(Math.floor(counterTime / 1000));
-  const intervalId = useRef<number | null>(null);
+  const [time, setTime] = useState(() => Math.floor(counterTime / 1000));
 
   useEffect(() => {
-    if (time === counterTime) return;
     setTime(Math.floor(counterTime / 1000));
   }, [counterTime]);
 
@@ -34,15 +32,12 @@ function Counter({
       return;
     }
 
-    intervalId.current = setInterval(() => {
+    const id = setInterval(() => {
       setTime((prevTime) => prevTime - 1);
     }, 1000);
 
     return () => {
-      if (intervalId.current != null) {
-        clearInterval(intervalId.current);
-        intervalId.current = null;
-      }
+      clearInterval(id);
     };
   }, [isActive]);
 
@@ -51,19 +46,15 @@ function Counter({
       return;
     }
 
-    if (!isActive && time !== counterTime) {
+    if (!isActive && time !== Math.floor(counterTime / 1000)) {
       setTime((prevTime) => prevTime + Math.floor(increment / 1000));
     }
   }, [isActive]);
 
   useEffect(() => {
-    if (time != 0) return;
-
-    if (intervalId.current != null) {
-      clearInterval(intervalId.current);
-      intervalId.current = null;
+    if (time <= 0) {
+      onTimeout();
     }
-    onTimeout();
   }, [time]);
 
   return (
@@ -124,14 +115,14 @@ function ChessTimers({
       <Counter
         counterTime={whiteTime}
         increment={increment}
-        isActive={!isWhiteTurn}
-        onTimeout={onBlackTimeout}
+        isActive={isWhiteTurn}
+        onTimeout={onWhiteTimeout}
       />
       <Counter
         counterTime={blackTime}
         increment={increment}
-        isActive={isWhiteTurn}
-        onTimeout={onWhiteTimeout}
+        isActive={!isWhiteTurn}
+        onTimeout={onBlackTimeout}
       />
     </div>
   );
