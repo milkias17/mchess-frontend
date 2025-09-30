@@ -42,7 +42,6 @@ export function useGameWebSocket(gameId: string) {
   const [gameFen, setGameFen] = useState<string>(
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
   );
-  const [currentTurn, setCurrentTurn] = useState<"white" | "black">("white");
   const [lastReceivedMove, setLastReceivedMove] = useState<IMove | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -50,11 +49,11 @@ export function useGameWebSocket(gameId: string) {
   const user = useAuth.use.user();
   const setUser = useAuth.use.setUser();
   const [hasEnded, setHasEnded] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
   const [game, setGame] = useState<LiveGame | null>(null);
 
-  useEffect(() => {
-    console.log("Run with: ", user?.token, " and ", gameId);
+  const connect = useCallback(() => {
     if (user?.token == null && gameId) {
       refreshAuthToken().then(({ accessToken }) => {
         const user = accessTokenToUser(accessToken);
@@ -85,20 +84,16 @@ export function useGameWebSocket(gameId: string) {
     ws.current = new WebSocket(`${WEBSOCKET_URL}/game/live/${gameId}`);
 
     ws.current.onopen = () => {
-      console.log("WebSocket connected");
       ws.current?.send(user.token);
-      console.log("Authentication token sent.");
       setIsConnected(true);
     };
 
     ws.current.onmessage = (event) => {
       const message: WebSocketMessageRecieve = JSON.parse(event.data);
-      console.log("Recieved message:", message.type);
       switch (message.type) {
         case "gameStateUpdate": {
           const payload = message.data as GameStateUpdatePayload;
           setGameFen(payload.fen);
-          setCurrentTurn(payload.turn);
           if (payload.lastMove) {
             setLastReceivedMove(payload.lastMove);
           }
@@ -108,17 +103,16 @@ export function useGameWebSocket(gameId: string) {
           const move = message.data as Move;
           const curGame = message.game;
           setGameFen(move.after);
-          setCurrentTurn(move.color === "w" ? "black" : "white");
           setLastReceivedMove(message.data);
           setGame(curGame);
           break;
         }
         case "game_started": {
           const game = message.data as LiveGame;
+          console.log(JSON.stringify(game, null, 2))
           if (user == null) {
             throw new Error("User is not logged in");
           }
-          console.log("Game started:", game);
           if (game.white_id === user.userId) {
             setClientPlayerColor("w");
           } else if (game.black_id === user.userId) {
@@ -128,7 +122,6 @@ export function useGameWebSocket(gameId: string) {
           if (game.moves != null) {
             const lastMove = game.moves?.[game.moves.length - 1];
             setGameFen(lastMove.after);
-            setCurrentTurn(lastMove.color === "w" ? "black" : "white");
             setLastReceivedMove(lastMove);
           }
 
@@ -138,7 +131,6 @@ export function useGameWebSocket(gameId: string) {
           break;
         }
         case "game_ended": {
-          console.log("Game ended:", message.data);
           const game = message.data as GameEntity;
           navigate({
             to: "/completed-game/$gameId",
@@ -157,15 +149,18 @@ export function useGameWebSocket(gameId: string) {
       }
     };
 
-    ws.current.onclose = () => {
+    ws.current.onclose = (ev) => {
       console.log("WebSocket disconnected");
       setIsConnected(false);
-      // Implement reconnection logic here if desired
+      if (ev.wasClean) {
+        return;
+      }
+      const delay = Math.min(1000 * 2 ** reconnectAttempts, 30000);
+      setTimeout(() => setReconnectAttempts((p) => p + 1), delay);
     };
 
     ws.current.onerror = (error) => {
       console.error("WebSocket error:", error);
-      setIsConnected(false);
     };
 
     return () => {
@@ -173,6 +168,15 @@ export function useGameWebSocket(gameId: string) {
       ws.current?.close();
     };
   }, [gameId, user]);
+
+  useEffect(() => {
+    connect();
+
+    return () => {
+      console.log("Cleaning up WebSocket effect.");
+      ws.current?.close();
+    };
+  }, [connect, reconnectAttempts]);
 
   const sendMove = useCallback(
     (move: Move) => {
@@ -205,7 +209,6 @@ export function useGameWebSocket(gameId: string) {
   return {
     game,
     gameFen,
-    currentTurn,
     sendMove,
     sendResignation,
     isConnected,

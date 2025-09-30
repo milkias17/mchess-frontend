@@ -64,11 +64,8 @@ export default function OnlineBoard(props: BoardProps) {
   const {
     lastReceivedMove,
     gameFen,
-    currentTurn,
     sendMove,
     sendResignation,
-    hasStarted,
-    isConnected,
     clientPlayerColor,
     game: liveGame,
   } = props.gameWebSocket;
