@@ -11,12 +11,30 @@ import captureSound from "../assets/sounds/Capture.ogg";
 import { useAuth } from "@/hooks/useAuth";
 import { Chess } from "chess.js";
 import { getDebouncedFunction } from "@/lib/getDebouncedFunction";
+import { getResult } from "@/lib/utils";
 
 const moveAudio = new Audio(moveSound);
 const captureAudio = new Audio(captureSound);
 
+function getResultColor(result: string) {
+  switch (result) {
+    case "Win":
+      return "badge-success";
+    case "Loss":
+      return "badge-error";
+    case "Draw":
+      return "badge-ghost";
+    default:
+      return "";
+  }
+}
+
 function getFenHistory(moves: IMove[]) {
   const fenHistory: string[] = [];
+  if (moves.length === 0) {
+    return fenHistory;
+  }
+
   fenHistory.push(moves[0].before);
 
   for (const move of moves) {
@@ -232,12 +250,7 @@ function CompletedChessGame() {
               <div className="flex justify-between">
                 <span className="font-bold">Result:</span>
                 <span
-                  className={`badge badge-lg ${gameEntity.winner === "1-0"
-                      ? "badge-success"
-                      : gameEntity.winner === "0-1"
-                        ? "badge-error"
-                        : "badge-ghost"
-                    }`}
+                  className={`badge badge-lg ${getResultColor(getResult(gameEntity.winner, gameEntity.white_user_id === user?.userId))}`}
                 >
                   {gameEntity?.winner || "Ongoing"}
                 </span>
