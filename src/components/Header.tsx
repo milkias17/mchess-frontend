@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "@tanstack/react-router";
+import { SearchUsers } from "./SearchUsers";
 
 export default function Header() {
   const user = useAuth.use.user();
@@ -13,11 +14,7 @@ export default function Header() {
         </Link>
       </div>
       <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Search"
-          className="input input-bordered w-24 md:w-auto"
-        />
+        <SearchUsers />
         {user != null && (
           <div className="dropdown dropdown-end">
             <button
@@ -33,7 +30,6 @@ export default function Header() {
               </div>
             </button>
             <ul
-              // biome-ignore lint/a11y/noNoninteractiveTabindex: <explanation>
               tabIndex={0}
               className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
             >
@@ -47,9 +43,6 @@ export default function Header() {
                 >
                   Profile
                 </Link>
-                {/* <a href="/" className="justify-between"> */}
-                {/*   Profile */}
-                {/* </a> */}
               </li>
               <li>
                 <a>Settings</a>

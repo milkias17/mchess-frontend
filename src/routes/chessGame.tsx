@@ -5,35 +5,12 @@ import {
   type AnyRoute,
   useNavigate,
 } from "@tanstack/react-router";
-import type { PieceSymbol } from "chess.js";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { Chessboard } from "react-chessboard";
 import type { Piece, Square } from "react-chessboard/dist/chessboard/types";
 import moveSound from "../assets/sounds/Move.ogg";
 import captureSound from "../assets/sounds/Capture.ogg";
-import Counter from "@/components/Counter";
 import ChessTimers from "@/components/Counter";
-
-const pieceToPieceSymbol = (piece: Piece): PieceSymbol | null => {
-  const symbolPart = piece.slice(1) as "P" | "B" | "N" | "R" | "Q" | "K";
-
-  switch (symbolPart) {
-    case "P":
-      return "p";
-    case "B":
-      return "b";
-    case "N":
-      return "n";
-    case "R":
-      return "r";
-    case "Q":
-      return "q";
-    case "K":
-      return "k";
-    default:
-      return null; // Or throw an error if the input is invalid
-  }
-};
 
 const moveAudio = new Audio(moveSound);
 const captureAudio = new Audio(captureSound);
@@ -181,7 +158,7 @@ function ChessGame() {
     return moves.map((move) => move.to);
   }, [selectedSquare]);
 
-  function onDrop(sourceSquare: Square, targetSquare: Square, piece: Piece) {
+  function onDrop(sourceSquare: Square, targetSquare: Square, _: Piece) {
     const move = makeMove({
       from: sourceSquare,
       to: targetSquare,
@@ -213,7 +190,7 @@ function ChessGame() {
           customBoardStyle={{
             ...(boardWidth >= 500 && { margin: "auto" }),
           }}
-          onPieceDragBegin={(piece, sourceSquare) => {
+          onPieceDragBegin={(_, sourceSquare) => {
             const squarePiece = game.get(sourceSquare);
             if (!squarePiece) {
               return;
@@ -226,7 +203,7 @@ function ChessGame() {
           position={game.fen()}
           boardWidth={boardWidth}
           onPieceDrop={onDrop}
-          onSquareClick={(s, p) => {
+          onSquareClick={(s, _) => {
             const piece = game.get(s);
             if (selectedSquare == null) {
               if (piece != null && piece.color === game.turn()) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Move } from "chess.js";
-import { API_URL, WEBSOCKET_URL } from "@/lib/constants";
+import { WEBSOCKET_URL } from "@/lib/constants";
 import { useAuth } from "./useAuth";
 import { refreshAuthToken } from "@/lib/apiClient";
 import { accessTokenToUser } from "@/lib/authService";
@@ -27,7 +27,6 @@ interface GameStateUpdatePayload {
 export type GameWebSocket = {
   game: LiveGame | null;
   gameFen: string;
-  currentTurn: "white" | "black";
   sendMove: (move: Move) => void;
   sendResignation: () => void;
   isConnected: boolean;
@@ -109,7 +108,6 @@ export function useGameWebSocket(gameId: string) {
         }
         case "game_started": {
           const game = message.data as LiveGame;
-          console.log(JSON.stringify(game, null, 2))
           if (user == null) {
             throw new Error("User is not logged in");
           }
@@ -164,7 +162,6 @@ export function useGameWebSocket(gameId: string) {
     };
 
     return () => {
-      console.log("Cleaning up WebSocket effect.");
       ws.current?.close();
     };
   }, [gameId, user]);
@@ -173,7 +170,6 @@ export function useGameWebSocket(gameId: string) {
     connect();
 
     return () => {
-      console.log("Cleaning up WebSocket effect.");
       ws.current?.close();
     };
   }, [connect, reconnectAttempts]);

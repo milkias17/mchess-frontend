@@ -1,15 +1,15 @@
-import { createRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { createRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
-import type { RootRoute } from '@tanstack/react-router'
+import type { AnyRoute } from "@tanstack/react-router";
 
 function TanStackQueryDemo() {
   const { data } = useQuery({
-    queryKey: ['people'],
+    queryKey: ["people"],
     queryFn: () =>
-      Promise.resolve([{ name: 'John Doe' }, { name: 'Jane Doe' }]),
+      Promise.resolve([{ name: "John Doe" }, { name: "Jane Doe" }]),
     initialData: [],
-  })
+  });
 
   return (
     <div className="p-4">
@@ -20,12 +20,12 @@ function TanStackQueryDemo() {
         ))}
       </ul>
     </div>
-  )
+  );
 }
 
-export default (parentRoute: RootRoute) =>
+export default (parentRoute: AnyRoute) =>
   createRoute({
-    path: '/demo/tanstack-query',
+    path: "/demo/tanstack-query",
     component: TanStackQueryDemo,
     getParentRoute: () => parentRoute,
-  })
+  });

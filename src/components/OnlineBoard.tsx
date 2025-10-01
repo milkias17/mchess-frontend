@@ -10,8 +10,8 @@ import { Chessboard } from "react-chessboard";
 import ChessTimers from "./Counter";
 import moveSound from "../assets/sounds/Move.ogg";
 import captureSound from "../assets/sounds/Capture.ogg";
-import type { Chess, Move } from "chess.js";
-import { useGameWebSocket, type GameWebSocket } from "@/hooks/useWebsocket";
+import type { Chess } from "chess.js";
+import { type GameWebSocket } from "@/hooks/useWebsocket";
 import Loading from "./Loading";
 
 const moveAudio = new Audio(moveSound);

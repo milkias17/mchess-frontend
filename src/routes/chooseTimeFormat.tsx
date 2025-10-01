@@ -1,13 +1,10 @@
-import Loading from "@/components/Loading";
 import axiosClient from "@/lib/apiClient";
-import { router } from "@/main";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import {
   createRoute,
   useNavigate,
   useSearch,
   type AnyRoute,
-  type RootRoute,
 } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import type { LiveGame } from "@/lib/types";
@@ -40,7 +37,6 @@ function CreateGameButton({ timeFormat }: { timeFormat: string }) {
       return res.data;
     },
     onSuccess: (data) => {
-      console.log(data.id);
       navigate({
         to: "/online-game/$gameId",
         params: {
@@ -100,7 +96,7 @@ function ChooseTimeFormat() {
               </Link>
             ))}
           {gameType === "online" &&
-            timeFormats.map((tf, i) => (
+            timeFormats.map((tf, _) => (
               <CreateGameButton timeFormat={tf} key={tf} />
             ))}
         </div>

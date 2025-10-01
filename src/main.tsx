@@ -1,5 +1,3 @@
-import { StrictMode, Suspense } from "react";
-import ReactDOM from "react-dom/client";
 import {
   Outlet,
   RouterProvider,
@@ -9,14 +7,16 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import DemoTanstackQuery from "./routes/demo.tanstack-query";
+import { StrictMode } from "react";
+import ReactDOM from "react-dom/client";
 import ChessGame from "./routes/chessGame";
 import ChooseTimeFormat from "./routes/chooseTimeFormat";
+import CompletedChessGame from "./routes/completedChessGame";
+import DemoTanstackQuery from "./routes/demo.tanstack-query";
 import LoginPage from "./routes/login";
+import OnlineChessGame from "./routes/onlineChessGame.tsx";
 import SignupPage from "./routes/signup";
 import UserProfile from "./routes/userProfile";
-import CompletedChessGame from "./routes/completedChessGame";
-import OnlineChessGame from "./routes/onlineChessGame.tsx";
 
 import Header from "./components/Header";
 
@@ -27,10 +27,9 @@ import * as TanstackQuery from "./integrations/tanstack-query/root-provider";
 import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
 
-import App from "./App.tsx";
-import { useAuth, type User } from "./hooks/useAuth.ts";
-import Loading from "./components/Loading.tsx";
 import { Toaster } from "react-hot-toast";
+import App from "./App.tsx";
+import { useAuth } from "./hooks/useAuth.ts";
 import { refreshAuthToken } from "./lib/apiClient.ts";
 import { accessTokenToUser } from "./lib/authService.ts";
 
@@ -49,6 +48,8 @@ function Layout() {
 const rootRoute = createRootRoute({
   component: () => <Layout />,
   beforeLoad: async () => {
+    if (useAuth.getState().user != null) return;
+
     try {
       const res = await refreshAuthToken();
       const user = accessTokenToUser(res.accessToken);

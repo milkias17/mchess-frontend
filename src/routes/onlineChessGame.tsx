@@ -2,7 +2,6 @@ import Loading from "@/components/Loading";
 import OnlineBoard from "@/components/OnlineBoard";
 import { useGameWebSocket } from "@/hooks/useWebsocket";
 import { createRoute, type AnyRoute, useParams } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 function OnlineChessGame() {

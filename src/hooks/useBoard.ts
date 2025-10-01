@@ -62,7 +62,7 @@ export function useBoard(onCheckMate?: () => void) {
       const moves = game.moves({ square: move.from as Square, verbose: true });
 
       if (moves.map((m) => m.to).includes(move.to as Square)) {
-        for (const [key, fn] of preHookFunctions.current) {
+        for (const [_, fn] of preHookFunctions.current) {
           fn(move);
         }
       }
@@ -76,7 +76,7 @@ export function useBoard(onCheckMate?: () => void) {
         }
       }
 
-      for (const [key, fn] of postHookFunctions.current) {
+      for (const [_, fn] of postHookFunctions.current) {
         fn(result);
       }
 

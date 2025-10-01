@@ -79,7 +79,6 @@ function CompletedChessGame() {
     queryKey: ["completed-game", gameId],
     queryFn: async () => {
       const res = await axiosClient.get<GameEntity>(`/game/${gameId}`);
-      console.log(res.data);
       return res.data;
     },
   });
@@ -163,27 +162,6 @@ function CompletedChessGame() {
       }
     },
     [gameEntity],
-  );
-
-  const setCurMove = useCallback(
-    (moveIndex: number) => {
-      if (
-        moveIndex < 0 ||
-        moveIndex >= fenHistory.length ||
-        gameEntity == null
-      ) {
-        return;
-      }
-
-      const move = gameEntity.moves[moveIndex];
-      if (move.san.includes("x")) {
-        captureAudio.play();
-      } else {
-        moveAudio.play();
-      }
-      setCurrentMoveIndex(moveIndex);
-    },
-    [gameEntity, fenHistory],
   );
 
   useEffect(() => {

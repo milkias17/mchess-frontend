@@ -1,7 +1,7 @@
 import axiosClient from "@/lib/apiClient";
 import { router } from "@/main";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 
 type WithSelectors<S> = S extends { getState: () => infer T }
   ? S & { use: { [K in keyof T]: () => T[K] } }
@@ -64,7 +64,6 @@ const useAuthBase = create<State & Actions>()(
     },
     {
       name: "user-storage",
-      // storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => {
         if (!state.user) return { user: null };
         const { token, ...userWithoutToken } = state.user;
