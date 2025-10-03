@@ -20,14 +20,6 @@ function UserProfile() {
 
   const navigate = useNavigate();
 
-  const games = [
-    { id: 1, opponent: "MagnusC", result: "Win", date: "2023-10-26" },
-    { id: 2, opponent: "FabianoC", result: "Draw", date: "2023-10-25" },
-    { id: 3, opponent: "MaximeV", result: "Loss", date: "2023-10-24" },
-    { id: 4, opponent: "HikaruN", result: "Win", date: "2023-10-23" },
-    { id: 5, opponent: "DingL", result: "Loss", date: "2023-10-22" },
-  ];
-
   const getResultColor = (result: string) => {
     switch (result) {
       case "Win":
@@ -83,7 +75,7 @@ function UserProfile() {
     return <Loading />;
   }
 
-  if (userData == null || gameStats == null || userGames == null) {
+  if (userData == null) {
     return <ErrorDisplay message="Could not load user profile." />;
   }
 
@@ -121,23 +113,31 @@ function UserProfile() {
             <div className="stat place-items-center">
               <div className="stat-title">Games Played</div>
               <div className="stat-value">
-                {gameStats.draws + gameStats.wins + gameStats.losses}
+                {gameStats != null
+                  ? gameStats.draws + gameStats.wins + gameStats.losses
+                  : 0}
               </div>
             </div>
 
             <div className="stat place-items-center">
               <div className="stat-title">Wins</div>
-              <div className="stat-value text-success">{gameStats.wins}</div>
+              <div className="stat-value text-success">
+                {gameStats?.wins ?? 0}
+              </div>
             </div>
 
             <div className="stat place-items-center">
               <div className="stat-title">Losses</div>
-              <div className="stat-value text-error">{gameStats.losses}</div>
+              <div className="stat-value text-error">
+                {gameStats?.losses ?? 0}
+              </div>
             </div>
 
             <div className="stat place-items-center">
               <div className="stat-title">Draws</div>
-              <div className="stat-value text-warning">{gameStats.draws}</div>
+              <div className="stat-value text-warning">
+                {gameStats?.draws ?? 0}
+              </div>
             </div>
           </div>
         </div>
@@ -146,7 +146,7 @@ function UserProfile() {
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
           <h2 className="card-title text-2xl mb-4">Recent Games</h2>
-          {games.length > 0 ? (
+          {userGames != null && userGames.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="table w-full table-zebra table-compact">
                 <thead>
@@ -157,33 +157,42 @@ function UserProfile() {
                   </tr>
                 </thead>
                 <tbody>
-                  {userGames.map((game) => (
-                    <tr
-                      key={game.id}
-                      className="hover:cursor-pointer"
-                      onClick={() => handleGameClick(game.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          handleGameClick(game.id);
-                        }
-                      }}
-                      tabIndex={0}
-                    >
-                      <td>
-                        {game.white_user_id === userId
-                          ? game.black_username
-                          : game.white_username}
-                      </td>
-                      <td
-                        className={getResultColor(
-                          getResult(game.winner, game.white_user_id === userId),
-                        )}
+                  {userGames != null &&
+                    userGames.map((game) => (
+                      <tr
+                        key={game.id}
+                        className="hover:cursor-pointer"
+                        onClick={() => handleGameClick(game.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            handleGameClick(game.id);
+                          }
+                        }}
+                        tabIndex={0}
                       >
-                        {getResult(game.winner, game.white_user_id === userId)}
-                      </td>
-                      <td>{new Date(game.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
+                        <td>
+                          {game.white_user_id === userId
+                            ? game.black_username
+                            : game.white_username}
+                        </td>
+                        <td
+                          className={getResultColor(
+                            getResult(
+                              game.winner,
+                              game.white_user_id === userId,
+                            ),
+                          )}
+                        >
+                          {getResult(
+                            game.winner,
+                            game.white_user_id === userId,
+                          )}
+                        </td>
+                        <td>
+                          {new Date(game.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

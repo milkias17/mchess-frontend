@@ -125,7 +125,7 @@ export default function OnlineBoard(props: BoardProps) {
   }, []);
 
   useEffect(() => {
-    const postHook = (move: MMove) => {
+    const postHook = (_: MMove) => {
       setSelectedSquare(null);
     };
     addPreHook(preHook);
@@ -215,7 +215,7 @@ export default function OnlineBoard(props: BoardProps) {
           customBoardStyle={{
             ...(boardWidth >= 500 && { margin: "auto" }),
           }}
-          onPieceDragBegin={(piece, sourceSquare) => {
+          onPieceDragBegin={(_, sourceSquare) => {
             const squarePiece = game.get(sourceSquare);
             if (!squarePiece) {
               return;
@@ -231,7 +231,7 @@ export default function OnlineBoard(props: BoardProps) {
           position={game.fen()}
           boardWidth={boardWidth}
           onPieceDrop={onDrop}
-          onSquareClick={(s, p) => {
+          onSquareClick={(s, _) => {
             const piece = game.get(s);
 
             if (selectedSquare == null) {
